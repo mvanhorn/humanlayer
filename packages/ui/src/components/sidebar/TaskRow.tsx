@@ -40,6 +40,8 @@ export interface TaskRowProps {
 	onCreateSession: () => void
 	onRename: () => void
 	onOpenPermissions: () => void
+	onHide?: () => void
+	hidden?: boolean
 	onCopyDeepLink: () => void
 	onArchive?: () => void
 	children: ReactNode
@@ -61,6 +63,8 @@ export const TaskRow = memo(function TaskRow({
 	onCreateSession,
 	onRename,
 	onOpenPermissions,
+	onHide,
+	hidden = false,
 	onCopyDeepLink,
 	onArchive,
 	children,
@@ -161,6 +165,11 @@ export const TaskRow = memo(function TaskRow({
 						<ContextMenuItem className="whitespace-nowrap" onSelect={onOpenPermissions}>
 							Manage permissions
 						</ContextMenuItem>
+						{onHide ? (
+							<ContextMenuItem className="whitespace-nowrap" onSelect={onHide}>
+								{hidden ? 'Unhide task' : 'Hide task'}
+							</ContextMenuItem>
+						) : null}
 						<ContextMenuSeparator />
 						<ContextMenuItem className="whitespace-nowrap" onSelect={onCopyDeepLink}>
 							Copy task deep link

@@ -14,6 +14,7 @@ import { RenameTaskDialog } from '@/components/RenameTaskDialog'
 import { useFocusStore } from '@/hooks/stores/focusStore'
 import { useSettingsStore } from '@/hooks/stores/settingsStore'
 import { useSidebarStore } from '@/hooks/stores/sidebarStore'
+import { useHiddenTasks } from '@/hooks/stores/useHiddenTasks'
 import { useArchiveTaskAction } from '@/hooks/useArchiveActions'
 import { useCommandPaletteAction } from '@/hooks/useCommandPaletteAction'
 import { useTaskActions } from '@/hooks/useTaskActions'
@@ -78,6 +79,8 @@ export function WiredTaskRow({
 	const taskActions = useTaskActions()
 	const archiveTask = useArchiveTaskAction()
 	const canArchive = Boolean(user?.id && task.ownerUserId === user.id)
+	const hiddenTasks = useHiddenTasks()
+	const hidden = hiddenTasks.isHidden(task.id)
 	const [renameOpen, setRenameOpen] = useState(false)
 	const [permissionsOpen, setPermissionsOpen] = useState(false)
 
@@ -137,6 +140,21 @@ export function WiredTaskRow({
 				onCreateSession={handleCreateSession}
 				onRename={() => setRenameOpen(true)}
 				onOpenPermissions={() => setPermissionsOpen(true)}
+				hidden={hidden}
+				onHide={() => {
+					if (hidden) {
+						hiddenTasks.unhide(task.id)
+						toast('Shown in your sidebar')
+						return
+					}
+					hiddenTasks.hide(task.id)
+					toast('Hidden from your sidebar', {
+						action: {
+							label: 'Undo',
+							onClick: () => hiddenTasks.unhide(task.id),
+						},
+					})
+				}}
 				onCopyDeepLink={() => void copyTaskDeepLink(task.id)}
 				onArchive={canArchive ? handleArchive : undefined}
 			>

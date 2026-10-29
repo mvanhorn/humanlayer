@@ -4,6 +4,7 @@ import { MoreHorizontal } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { useSettingsStore } from '@/hooks/stores/settingsStore'
+import { useHiddenTasks } from '@/hooks/stores/useHiddenTasks'
 import { Menu, MenuItem, MenuLabel, MenuSeparator } from '@/minimalist/components/Menu'
 import { PromptAccessDialog } from '@/minimalist/components/PromptAccessDialog'
 import { TextDialog } from '@/minimalist/components/TextDialog'
@@ -11,6 +12,7 @@ import { useSessionAccess } from '@/minimalist/lib/access'
 import { useTaskAutoAdvance } from '@/minimalist/lib/auto-advance'
 import { useTask } from '@/minimalist/lib/data'
 import { sessionName } from '@/minimalist/lib/session-name'
+import { useUi } from '@/minimalist/lib/ui-state'
 import { useArchive } from '@/minimalist/lib/use-archive'
 import { useCopy } from '@/minimalist/lib/use-copy'
 import { useRiptideApi } from '@/orpc/client'
@@ -22,7 +24,10 @@ export function ThreadActions({ session }: { session: Session }) {
 	const { task } = useTask(taskId)
 	const autoAdvance = useTaskAutoAdvance(taskId)
 	const copy = useCopy()
+	const { showToast } = useUi()
 	const archiver = useArchive()
+	const hiddenTasks = useHiddenTasks()
+	const hidden = taskId ? hiddenTasks.isHidden(taskId) : false
 	const anchor = useRef<HTMLButtonElement>(null)
 	const [open, setOpen] = useState(false)
 	const [rename, setRename] = useState<'task' | 'session' | null>(null)
@@ -65,6 +70,24 @@ export function ThreadActions({ session }: { session: Session }) {
 							onSelect={() => {
 								setOpen(false)
 								setRename('task')
+							}}
+						/>
+						<MenuItem
+							label={hidden ? 'Unhide task' : 'Hide task'}
+							detail={hidden ? undefined : 'Only for you. The task stays in the workspace.'}
+							onSelect={() => {
+								setOpen(false)
+								if (!taskId) return
+								if (hidden) {
+									hiddenTasks.unhide(taskId)
+									showToast('Shown in your sidebar')
+									return
+								}
+								hiddenTasks.hide(taskId)
+								showToast('Hidden from your sidebar', {
+									label: 'Undo',
+									run: () => hiddenTasks.unhide(taskId),
+								})
 							}}
 						/>
 						{autoAdvance.available ? (

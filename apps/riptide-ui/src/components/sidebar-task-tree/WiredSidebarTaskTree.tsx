@@ -1,3 +1,4 @@
+import { Button } from '@humanlayer/ui/components/button'
 import { KeyboardShortcut } from '@humanlayer/ui/components/keyboard-shortcut'
 import { SidebarFooterBar } from '@humanlayer/ui/components/sidebar/SidebarFooterBar'
 import { SidebarHeaderBar } from '@humanlayer/ui/components/sidebar/SidebarHeaderBar'
@@ -5,8 +6,10 @@ import { SidebarScrollArea } from '@humanlayer/ui/components/sidebar/SidebarScro
 import { SidebarSectionHeader } from '@humanlayer/ui/components/sidebar/SidebarSectionHeader'
 import { SidebarShell } from '@humanlayer/ui/components/sidebar/SidebarShell'
 import { Switch } from '@humanlayer/ui/components/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@humanlayer/ui/components/tooltip'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import { Eye, EyeOff } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 
 import { LeftSidebarToggleButton } from '@/components/app/LeftSidebarToggleButton'
@@ -23,11 +26,13 @@ import { useCommandPaletteStore } from '@/hooks/stores/commandPaletteStore'
 import { useFocusStore } from '@/hooks/stores/focusStore'
 import { useSettingsStore } from '@/hooks/stores/settingsStore'
 import { useSidebarStore } from '@/hooks/stores/sidebarStore'
+import { useHiddenTasks } from '@/hooks/stores/useHiddenTasks'
 import { useArchiveSessionAction, useArchiveTaskAction } from '@/hooks/useArchiveActions'
 import { useLeftNavHotkeys } from '@/hooks/useLeftNavHotkeys'
 import { useUserInfo } from '@/hooks/useUserInfo'
 import { hasMacWindowControls } from '@/lib/tauri-chrome'
 import { isDesktop } from '@/lib/utils'
+import { hasHiddenSidebarTasks } from '@/lib/visible-sidebar-tasks'
 import { useRiptideApi } from '@/orpc/client'
 
 import { useSidebarNavigation } from './useSidebarNavigation'
@@ -53,6 +58,8 @@ export function WiredSidebarTaskTree() {
 		jumpFirst,
 		jumpLast,
 	} = useSidebarNavigation(sidebarContainerRef)
+	const hiddenTasks = useHiddenTasks()
+	const showHiddenToggle = hasHiddenSidebarTasks(hiddenTasks.hiddenTaskIds, hiddenTasks.showHidden)
 	const { userId, dbOrganizationId } = useUserInfo()
 	const draftTaskCount = useDraftTasksCount(userId)
 	const draftSessionCount = useDraftSessionsCount(userId)
@@ -306,8 +313,33 @@ export function WiredSidebarTaskTree() {
 					onClick={() => navigate({ to: '/sessions', search: { tab: 'drafts' } })}
 				/>
 			) : null}
-			{totalDraftCount > 0 || (tasks.length > 0 && standaloneSessions.length > 0) ? (
-				<SidebarSectionHeader icon="tasks" label="Tasks" count={tasks.length || undefined} />
+			{totalDraftCount > 0 || (tasks.length > 0 && standaloneSessions.length > 0) || showHiddenToggle ? (
+				<div className="flex items-center pr-3">
+					<SidebarSectionHeader icon="tasks" label="Tasks" count={tasks.length || undefined} />
+					{showHiddenToggle ? (
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									aria-label={hiddenTasks.showHidden ? 'Showing hidden tasks' : 'Show hidden tasks'}
+									aria-pressed={hiddenTasks.showHidden}
+									className="ml-auto size-6 text-muted-foreground hover:text-accent"
+									onClick={() => hiddenTasks.setShowHidden(!hiddenTasks.showHidden)}
+								>
+									{hiddenTasks.showHidden ? (
+										<Eye aria-hidden className="size-3" />
+									) : (
+										<EyeOff aria-hidden className="size-3" />
+									)}
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="right">
+								{hiddenTasks.showHidden ? 'Showing hidden tasks' : 'Show hidden tasks'}
+							</TooltipContent>
+						</Tooltip>
+					) : null}
+				</div>
 			) : null}
 			{tasks.length > 0 ? (
 				<ul className="flex flex-col py-1">

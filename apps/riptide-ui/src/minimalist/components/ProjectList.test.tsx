@@ -5,9 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ProjectList } from './ProjectList'
 
-const { route, data } = vi.hoisted(() => ({
+const { route, data, hidden } = vi.hoisted(() => ({
 	route: { selectedTaskId: 'task-7' },
 	data: { standalone: [] as Session[], emptyProjects: [] as Array<{ name: string; mine: boolean; tasks?: number }> },
+	hidden: {
+		hiddenTaskIds: [] as string[],
+		showHidden: false,
+		hide: () => undefined,
+		unhide: () => undefined,
+		setShowHidden: (show: boolean) => {
+			hidden.showHidden = show
+		},
+		isHidden: (id: string) => hidden.hiddenTaskIds.includes(id),
+	},
 }))
 vi.mock('@tanstack/react-router', () => ({
 	useParams: () => ({}),
@@ -48,6 +58,9 @@ vi.mock('@/minimalist/lib/data', () => ({
 		],
 	}),
 }))
+vi.mock('@/hooks/stores/useHiddenTasks', () => ({
+	useHiddenTasks: () => hidden,
+}))
 vi.mock('@/minimalist/lib/ui-state', () => ({ useUi: () => ({ closeSidebarOnNarrow: vi.fn(), showToast: vi.fn() }) }))
 vi.mock('@/orpc/client', () => ({ useRiptideApi: () => ({ client: {} }) }))
 vi.mock('./Menu', () => ({ Menu: () => null, MenuItem: () => null }))
@@ -65,6 +78,8 @@ beforeEach(() => {
 	route.selectedTaskId = 'task-7'
 	data.standalone = []
 	data.emptyProjects = []
+	hidden.hiddenTaskIds = []
+	hidden.showHidden = false
 })
 
 describe('standalone session names', () => {
@@ -98,6 +113,20 @@ describe('selected task project disclosure', () => {
 		view.rerender(<ProjectList />)
 		expect(disclosure).toHaveAttribute('aria-expanded', 'true')
 		expect(screen.getByRole('link', { name: 'Task 2' })).toHaveAttribute('aria-current', 'page')
+	})
+})
+
+describe('hidden tasks', () => {
+	it('omits hidden tasks until you choose to show them', () => {
+		hidden.hiddenTaskIds = ['task-0']
+		const view = render(<ProjectList />)
+		expect(screen.queryByRole('link', { name: 'Task 0' })).toBeNull()
+		expect(screen.getByRole('link', { name: 'Task 1' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Show hidden tasks' })).toBeInTheDocument()
+		hidden.showHidden = true
+		view.rerender(<ProjectList />)
+		expect(screen.getByRole('link', { name: 'Task 0' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Showing hidden tasks' })).toHaveAttribute('aria-pressed', 'true')
 	})
 })
 

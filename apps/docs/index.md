@@ -30,7 +30,7 @@ How-to guides help you complete a specific task.
 Explanation pages help you understand product concepts and the reasons behind them.
 
 - [How workflow phases fit together](/explanation/workflow-phases): understand the planning paths, phases, and review points.
-- [How HumanLayer tasks work](/explanation/tasks): understand how tasks group sessions, shared work, and synced files.
+- [How HumanLayer tasks work](/explanation/tasks): understand how tasks group sessions, shared work, and synced files, and how to hide a task from your sidebar.
 - [How workspace configuration works](/explanation/workspace-model): understand shared config, local overrides, and multi-repository workspaces.
 - [How remote daemons work](/explanation/remote-daemons): understand daemon hosts, authentication, capabilities, and security.
 

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Archive, MoreHorizontal } from 'lucide-react'
 import { useRef, useState } from 'react'
 
+import { useHiddenTasks } from '@/hooks/stores/useHiddenTasks'
 import { useBrowserAuth as useAuth } from '@/hooks/use-browser-auth'
 import { WiredUserAvatar } from '@/minimalist/components/Avatar'
 import { Menu, MenuItem, MenuSeparator } from '@/minimalist/components/Menu'
@@ -22,16 +23,18 @@ import { useRiptideApi } from '@/orpc/client'
 export function TaskItem({ row, selected }: { row: TaskRow; selected: boolean }) {
 	const { client: api } = useRiptideApi()
 	const { user } = useAuth()
-	const { closeSidebarOnNarrow } = useUi()
+	const { closeSidebarOnNarrow, showToast } = useUi()
 	const copy = useCopy()
 	const unread = useTaskUnread(row.sessions)
 	const status = statusText(row, unread)
 	const { markRead, markUnread } = useUnreadActions()
 	const archiver = useArchive()
+	const hiddenTasks = useHiddenTasks()
 	const anchor = useRef<HTMLDivElement>(null)
 	const [open, setOpen] = useState(false)
 	const [renaming, setRenaming] = useState(false)
 	const taskId = row.task.id
+	const hidden = hiddenTasks.isHidden(taskId)
 	const latest = row.latest
 	const archive = () => {
 		setOpen(false)
@@ -91,6 +94,23 @@ export function TaskItem({ row, selected }: { row: TaskRow; selected: boolean })
 					onSelect={() => {
 						setOpen(false)
 						setRenaming(true)
+					}}
+				/>
+				<MenuItem
+					label={hidden ? 'Unhide task' : 'Hide task'}
+					detail={hidden ? undefined : 'Only for you. The task stays in the workspace.'}
+					onSelect={() => {
+						setOpen(false)
+						if (hidden) {
+							hiddenTasks.unhide(taskId)
+							showToast('Shown in your sidebar')
+							return
+						}
+						hiddenTasks.hide(taskId)
+						showToast('Hidden from your sidebar', {
+							label: 'Undo',
+							run: () => hiddenTasks.unhide(taskId),
+						})
 					}}
 				/>
 				<MenuItem

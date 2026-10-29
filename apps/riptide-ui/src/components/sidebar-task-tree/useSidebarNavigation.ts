@@ -6,11 +6,18 @@ import { type RefObject, useCallback, useEffect, useMemo } from 'react'
 import { useSync } from '@/components/providers/SyncProvider'
 import { useFocusStore } from '@/hooks/stores/focusStore'
 import { useSidebarStore } from '@/hooks/stores/sidebarStore'
+import { useHiddenTasks } from '@/hooks/stores/useHiddenTasks'
+import { visibleSidebarTasks } from '@/lib/visible-sidebar-tasks'
 
 import { useSidebarTaskTreeQuery } from './useSidebarTaskTreeQuery'
 
 export function useSidebarNavigation(containerRef: RefObject<HTMLDivElement | null>) {
-	const { tasks, standaloneSessions, isLoading, isReady } = useSidebarTaskTreeQuery()
+	const { tasks: treeTasks, standaloneSessions, isLoading, isReady } = useSidebarTaskTreeQuery()
+	const hiddenTasks = useHiddenTasks()
+	const tasks = useMemo(
+		() => visibleSidebarTasks(treeTasks, (task) => task.id, hiddenTasks.hiddenTaskIds, hiddenTasks.showHidden),
+		[treeTasks, hiddenTasks.hiddenTaskIds, hiddenTasks.showHidden],
+	)
 	const { sessionsCollection } = useSync()
 	const expandedTaskIds = useSidebarStore((state) => state.expandedTaskIds)
 	const taskMatch = useMatch({ from: '/_app/tasks/$taskId', shouldThrow: false })

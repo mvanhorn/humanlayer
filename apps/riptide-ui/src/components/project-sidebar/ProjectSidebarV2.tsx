@@ -2,12 +2,14 @@ import { Button } from '@humanlayer/ui/components/button'
 import { SidebarSectionHeader } from '@humanlayer/ui/components/sidebar/SidebarSectionHeader'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@humanlayer/ui/components/tooltip'
 import { useAuth } from '@workos-inc/authkit-react'
-import { Plus } from 'lucide-react'
+import { Eye, EyeOff, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from 'zustand'
 
 import { CreateProjectDialog } from '@/components/launcher-v3/CreateProjectDialog'
 import { createProjectSidebarStore } from '@/hooks/stores/projectSidebarStore'
+import { useHiddenTasks } from '@/hooks/stores/useHiddenTasks'
+import { hasHiddenSidebarTasks, visibleSidebarTasks } from '@/lib/visible-sidebar-tasks'
 
 import { CreateProjectPrompt } from './CreateProjectPrompt'
 import { deriveProjectSidebar, layoutProjectSidebar } from './derive-project-sidebar'
@@ -29,6 +31,7 @@ function ScopedProjectSidebar({ userId, organizationId }: { userId: string; orga
 	const [store] = useState(() => createProjectSidebarStore(userId, organizationId))
 	const order = useStore(store, (state) => state.order)
 	const data = useProjectSidebarData(userId)
+	const hiddenTasks = useHiddenTasks()
 	const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
 	const [createOpen, setCreateOpen] = useState(false)
 	const derived = deriveProjectSidebar({ ...data, order })
@@ -42,19 +45,47 @@ function ScopedProjectSidebar({ userId, organizationId }: { userId: string; orga
 		data.projects,
 		order,
 	)
-	const groups = layout.groups
+	const groups = layout.groups.map((group) => ({
+		...group,
+		tasks: visibleSidebarTasks(group.tasks, (task) => task.id, hiddenTasks.hiddenTaskIds, hiddenTasks.showHidden),
+	}))
 	const visibleTasks = groups.filter((group) => !collapsed.has(group.id)).flatMap((group) => group.tasks)
+	const showHiddenToggle = hasHiddenSidebarTasks(hiddenTasks.hiddenTaskIds, hiddenTasks.showHidden)
 	// Only observe resolved groups. A pending read cannot mutate saved order or assign a task to Other.
-	const snapshot = groups
+	// Personal hides must not look like archival: persist every task still in the layout.
+	const snapshot = layout.groups
 		.filter((group) => group.project || group.id === 'other')
 		.map((group) => ({ id: group.id, taskIds: group.tasks.map((task) => task.id) }))
-	const projectIds = groups.filter((group) => group.project).map((group) => group.id)
+	const projectIds = layout.groups.filter((group) => group.project).map((group) => group.id)
 	return (
 		<ProjectSidebarFrame tasks={visibleTasks} standaloneSessions={data.standaloneSessions}>
 			<ProjectSidebarArchiveSync store={store} />
 			<ProjectSidebarOrderSnapshot key={JSON.stringify(snapshot)} store={store} groups={snapshot} />
 			<div className="flex items-center pr-3">
 				<SidebarSectionHeader icon="projects" label="Your projects" />
+				{showHiddenToggle ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								aria-label={hiddenTasks.showHidden ? 'Showing hidden tasks' : 'Show hidden tasks'}
+								aria-pressed={hiddenTasks.showHidden}
+								className="size-6 text-muted-foreground hover:text-accent"
+								onClick={() => hiddenTasks.setShowHidden(!hiddenTasks.showHidden)}
+							>
+								{hiddenTasks.showHidden ? (
+									<Eye aria-hidden className="size-3" />
+								) : (
+									<EyeOff aria-hidden className="size-3" />
+								)}
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent side="right">
+							{hiddenTasks.showHidden ? 'Showing hidden tasks' : 'Show hidden tasks'}
+						</TooltipContent>
+					</Tooltip>
+				) : null}
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button

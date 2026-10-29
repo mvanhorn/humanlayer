@@ -70,6 +70,13 @@ HumanLayer shares access at the task level. When a task is shared:
 
 This keeps the discussion with the work it describes. A reviewer does not need a separate copy of a plan or design document.
 
+## Hide a task from your sidebar
+
+The sidebar lists every task you can see in the workspace, including colleagues' work you no longer need to follow. Hiding is only for you, on this device: the task stays in the workspace, teammates still see it, and nothing is archived.
+
+- On a task row, choose **Hide task**.
+- Choose **Show hidden tasks** in the sidebar to see those rows again, then **Unhide task** to put one back in the list.
+
 ## Task files have a local and cloud form
 
 Each task has a directory at:

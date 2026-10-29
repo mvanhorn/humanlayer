@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate, useParams } from '@tanstack/react-router'
-import { Folder, FolderOpen, GitBranch, MoreHorizontal, Plus, SquarePen } from 'lucide-react'
+import { Eye, EyeOff, Folder, FolderOpen, GitBranch, MoreHorizontal, Plus, SquarePen } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { useHiddenTasks } from '@/hooks/stores/useHiddenTasks'
+import { hasHiddenSidebarTasks, visibleSidebarTasks } from '@/lib/visible-sidebar-tasks'
 import { Menu, MenuItem } from '@/minimalist/components/Menu'
 import { TaskItem } from '@/minimalist/components/TaskItem'
 import { type ProjectGroup, repoName, useOpenTaskId, useTaskTree } from '@/minimalist/lib/data'
@@ -22,7 +24,19 @@ const STANDALONE_SESSIONS = 8
  */
 export function ProjectList() {
 	const { groups: allGroups, standalone, isReady } = useTaskTree()
-	const groups = allGroups.filter((group) => group.mine || group.tasks.length > 0)
+	const hiddenTasks = useHiddenTasks()
+	const groups = allGroups
+		.map((group) => ({
+			...group,
+			tasks: visibleSidebarTasks(
+				group.tasks,
+				(row) => row.task.id,
+				hiddenTasks.hiddenTaskIds,
+				hiddenTasks.showHidden,
+			),
+		}))
+		.filter((group) => group.mine || group.tasks.length > 0)
+	const showHiddenToggle = hasHiddenSidebarTasks(hiddenTasks.hiddenTaskIds, hiddenTasks.showHidden)
 	const { closeSidebarOnNarrow } = useUi()
 	const params = useParams({ strict: false }) as { sessionId?: string }
 	const openTaskId = useOpenTaskId()
@@ -39,6 +53,22 @@ export function ProjectList() {
 			<div className="section">
 				Projects
 				<span className="sp" />
+				{showHiddenToggle ? (
+					<button
+						type="button"
+						className="section-act"
+						title={hiddenTasks.showHidden ? 'Showing hidden tasks' : 'Show hidden tasks'}
+						aria-label={hiddenTasks.showHidden ? 'Showing hidden tasks' : 'Show hidden tasks'}
+						aria-pressed={hiddenTasks.showHidden}
+						onClick={() => hiddenTasks.setShowHidden(!hiddenTasks.showHidden)}
+					>
+						{hiddenTasks.showHidden ? (
+							<Eye className="i sm" strokeWidth={1.6} />
+						) : (
+							<EyeOff className="i sm" strokeWidth={1.6} />
+						)}
+					</button>
+				) : null}
 				<Link className="section-act" to="/settings/projects/new" title="Add project" aria-label="Add project">
 					<Plus className="i sm" strokeWidth={1.6} />
 				</Link>
