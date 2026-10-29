@@ -24,6 +24,7 @@ import { ArtifactSearchBar } from '@humanlayer/ui/components/artifact-search-bar
 import {
 	ArtifactViewerTabs,
 	ContentCopyButton,
+	ContentDownloadButton,
 	getArtifactViewerViewOptions,
 	type ArtifactViewMode,
 } from '@humanlayer/ui/components/artifact-viewer'
@@ -965,6 +966,7 @@ function ArtifactViewerHeader({
 				</Button>
 			) : null}
 			<ContentCopyButton content={content} />
+			<ContentDownloadButton content={content} fileName={fileName} />
 		</div>
 	)
 }

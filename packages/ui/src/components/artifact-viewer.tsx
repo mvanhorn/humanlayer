@@ -22,6 +22,7 @@ import {
   isPreviewableFile,
   isRenderedArtifactFile,
 } from '@humanlayer/ui/lib/file-types'
+import { canDownloadArtifact, downloadArtifactFile } from '@humanlayer/ui/lib/download-artifact'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
 import { DropdownMenuItem } from './dropdown-menu'
 
@@ -152,7 +153,7 @@ export interface ArtifactViewerProps {
   searchQuery?: string
   /** Currently-active match — threaded to the Raw tab renderer (Phase 2 uses it). */
   searchCurrentMatch?: { line: number; occurrence: number; charIndex: number } | null
-  /** Show a download button next to the copy button (default: false). Used by riptide-cloud. */
+  /** Show a download button next to the copy button (default: true). */
   showDownloadButton?: boolean
   /** Imperative search adapter for the rendered JSON tree. */
   structuredSearchRef?: React.RefObject<JsonArtifactSearchHandle | null>
@@ -219,32 +220,17 @@ export const ContentDownloadButton = ({
   content,
   fileName,
   imageUrl,
+  className,
 }: {
   content: string
   fileName?: string
   imageUrl?: string | null
+  className?: string
 }) => {
-  const handleDownload = async () => {
-    const downloadName = fileName ?? 'artifact'
-    // The `download` attribute is ignored for cross-origin hrefs, so for S3-stored
-    // artifacts (pre-signed URL) we fetch the bytes and download via a same-origin
-    // blob URL — otherwise the browser just opens the file in a new tab.
-    let objectUrl: string
-    if (imageUrl) {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      objectUrl = URL.createObjectURL(blob)
-    } else {
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-      objectUrl = URL.createObjectURL(blob)
-    }
-    const link = document.createElement('a')
-    link.href = objectUrl
-    link.download = downloadName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(objectUrl)
+  const enabled = canDownloadArtifact(content, imageUrl)
+  const handleDownload = () => {
+    if (!enabled) return
+    void downloadArtifactFile({ content, fileName, imageUrl }).catch(() => undefined)
   }
 
   return (
@@ -253,8 +239,9 @@ export const ContentDownloadButton = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className={cn('h-6 w-6', className)}
           onClick={handleDownload}
+          disabled={!enabled}
           aria-label="Download file"
         >
           <Download className="h-3 w-3" />
@@ -264,6 +251,29 @@ export const ContentDownloadButton = ({
         <p>Download file</p>
       </TooltipContent>
     </Tooltip>
+  )
+}
+
+export function ContentDownloadMenuItem({
+  content,
+  fileName,
+  imageUrl,
+}: {
+  content: string
+  fileName?: string
+  imageUrl?: string | null
+}) {
+  const enabled = canDownloadArtifact(content, imageUrl)
+  return (
+    <DropdownMenuItem
+      disabled={!enabled}
+      onSelect={() => {
+        if (!enabled) return
+        void downloadArtifactFile({ content, fileName, imageUrl }).catch(() => undefined)
+      }}
+    >
+      Download file
+    </DropdownMenuItem>
   )
 }
 
@@ -380,7 +390,7 @@ export const ArtifactViewer: FC<ArtifactViewerProps> = ({
   onSearchToggleRequest,
   searchQuery,
   searchCurrentMatch,
-  showDownloadButton = false,
+  showDownloadButton = true,
   structuredSearchRef,
 }) => {
   const jsonFile = isJsonFile(fileName ?? '')

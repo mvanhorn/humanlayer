@@ -4,6 +4,8 @@ import {
 	ArtifactViewerTabs,
 	ContentCopyButton,
 	ContentCopyMenuItem,
+	ContentDownloadButton,
+	ContentDownloadMenuItem,
 	getArtifactViewerViewOptions,
 	getDisplayedArtifactViewMode,
 	type ArtifactViewerViewOption,
@@ -142,6 +144,9 @@ interface CreateSidebarArtifactActionsOptions {
 	isMac: boolean
 	isS3Artifact: boolean
 	copyAction: ContentCopyActionModel
+	downloadContent: string
+	downloadFileName: string
+	downloadImageUrl: string | null
 	viewerVersionAction: ArtifactViewerVersionActionModel | null
 	commentsAction: CommentsBulkActionsModel
 	artifactActionsMenuItems: ReactNode
@@ -158,6 +163,9 @@ function createSidebarArtifactActions({
 	isMac,
 	isS3Artifact,
 	copyAction,
+	downloadContent,
+	downloadFileName,
+	downloadImageUrl,
 	viewerVersionAction,
 	commentsAction,
 	artifactActionsMenuItems,
@@ -236,6 +244,20 @@ function createSidebarArtifactActions({
 			overflow: <ContentCopyMenuItem action={copyAction} />,
 		})
 	}
+	actions.push({
+		key: 'download',
+		placement: 'trailing',
+		inline: (
+			<ContentDownloadButton content={downloadContent} fileName={downloadFileName} imageUrl={downloadImageUrl} />
+		),
+		overflow: (
+			<ContentDownloadMenuItem
+				content={downloadContent}
+				fileName={downloadFileName}
+				imageUrl={downloadImageUrl}
+			/>
+		),
+	})
 	if (viewerVersionAction) {
 		actions.push({
 			key: 'viewer-version',
@@ -614,6 +636,7 @@ function SidebarArtifactFullscreenAction({
 
 interface SidebarArtifactPresentationChromeProps {
 	artifactFields: SidebarArtifactFields
+	imageUrl: string | null
 	artifacts: SessionArtifact[]
 	client: RiptideApi['client']
 	effectiveViewMode: ArtifactViewMode
@@ -634,6 +657,7 @@ interface SidebarArtifactPresentationChromeProps {
 
 function SidebarArtifactPresentationChrome({
 	artifactFields,
+	imageUrl,
 	artifacts,
 	client,
 	effectiveViewMode,
@@ -682,6 +706,9 @@ function SidebarArtifactPresentationChrome({
 		isMac,
 		isS3Artifact: artifactFields.isS3Artifact,
 		copyAction,
+		downloadContent: artifactFields.content,
+		downloadFileName: artifactFields.fileName,
+		downloadImageUrl: imageUrl,
 		viewerVersionAction,
 		commentsAction,
 		artifactActionsMenuItems,
@@ -766,6 +793,7 @@ export const SidebarWidgetArtifactViewer: FC<SidebarWidgetArtifactViewerProps> =
 		<SidebarArtifactFocusSurface containerRef={containerRef} fullscreen={fullscreen}>
 			<SidebarArtifactPresentationChrome
 				artifactFields={artifactFields}
+				imageUrl={imageUrl}
 				artifacts={artifacts}
 				client={client}
 				effectiveViewMode={model.effectiveViewMode}

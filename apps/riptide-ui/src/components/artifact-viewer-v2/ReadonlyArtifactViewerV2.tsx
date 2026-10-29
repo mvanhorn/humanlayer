@@ -6,7 +6,12 @@ import {
 	MarkdownViewerV2,
 	useMarkdownViewerV2Editor,
 } from '@humanlayer/ui/artifact-viewer-v2'
-import { ArtifactViewerTabs, ContentCopyButton, type ArtifactViewMode } from '@humanlayer/ui/components/artifact-viewer'
+import {
+	ArtifactViewerTabs,
+	ContentCopyButton,
+	ContentDownloadButton,
+	type ArtifactViewMode,
+} from '@humanlayer/ui/components/artifact-viewer'
 import { Button } from '@humanlayer/ui/components/button'
 import type { JsonArtifactSearchHandle } from '@humanlayer/ui/components/json-artifact/json-artifact-search'
 import type { CustomLanguageRenderers } from '@humanlayer/ui/markdown-viewer/CodeBlock'
@@ -85,6 +90,7 @@ function ReadonlyArtifactViewerV2Composition({
 						</Button>
 					) : null}
 					<ContentCopyButton content={content} />
+					<ContentDownloadButton content={content} fileName={fileName} />
 				</div>
 			) : null}
 			<ArtifactViewerWorkspace

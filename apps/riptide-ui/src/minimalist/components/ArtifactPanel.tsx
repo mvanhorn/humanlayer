@@ -5,7 +5,7 @@ import { draftSessionStorageKeys } from '@humanlayer/ui/lib/draft-session-storag
 import { eq, useLiveQuery } from '@tanstack/react-db'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ChevronDown, ChevronUp, Copy, History, ListTree, MessageSquarePlus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, Download, History, ListTree, MessageSquarePlus } from 'lucide-react'
 import { Fragment, type MouseEvent, type ReactNode, type TouchEvent, useMemo, useRef, useState } from 'react'
 
 import { useSync } from '@/components/providers/SyncProvider'
@@ -50,6 +50,7 @@ import type { PanelFocus } from '@/minimalist/lib/thread-panel'
 import { useUi } from '@/minimalist/lib/ui-state'
 import { useCopy } from '@/minimalist/lib/use-copy'
 import { useCommentAuthor, useDocComments } from '@/minimalist/lib/use-doc-comments'
+import { useDownload } from '@/minimalist/lib/use-download'
 import { useRiptideApi } from '@/orpc/client'
 
 /** Where you were in each document, so leaving for another tab and coming back keeps your place. */
@@ -117,15 +118,27 @@ function ImageView({ artifact, children }: { artifact: TaskArtifact; children?: 
 		retry: false,
 	})
 	const name = artifactName(artifact.file_name)
+	const download = useDownload()
 	return (
 		<>
 			<div className="phead">
 				<span className="title ell">{name}</span>
 				<span className="sp" />
 				{data?.downloadUrl ? (
-					<a className="btn ghost sm" href={data.downloadUrl} target="_blank" rel="noreferrer">
-						Open original
-					</a>
+					<>
+						<button
+							type="button"
+							className="iconbtn"
+							title="Download file"
+							aria-label="Download file"
+							onClick={() => download('', name, data.downloadUrl)}
+						>
+							<Download className="i sm" strokeWidth={1.6} />
+						</button>
+						<a className="btn ghost sm" href={data.downloadUrl} target="_blank" rel="noreferrer">
+							Open original
+						</a>
+					</>
 				) : null}
 				{children}
 			</div>
@@ -149,13 +162,13 @@ function HtmlView({ artifact, children }: { artifact: TaskArtifact; children?: R
 	const { queryClient: api } = useRiptideApi()
 	const { artifact: stored, isLoading: loadingStored } = useArtifactContent(artifact.id)
 	const inS3 = stored?.storage_type === 's3'
-	const download = useQuery({
+	const signed = useQuery({
 		...artifactDownloadUrlQueryOptions(api, { id: artifact.id, last_updated_at: artifact.last_updated_at ?? 0n }),
 		enabled: inS3,
 		staleTime: 4 * 60 * 60 * 1000,
 		retry: false,
 	})
-	const url = download.data?.downloadUrl
+	const url = signed.data?.downloadUrl
 	const rewritten = useHtmlArtifactDocument({
 		artifactId: artifact.id,
 		fileName: artifact.file_name,
@@ -165,11 +178,23 @@ function HtmlView({ artifact, children }: { artifact: TaskArtifact; children?: R
 	})
 	const text = !inS3 && stored?.content ? stored.content : undefined
 	const name = artifactName(artifact.file_name)
+	const save = useDownload()
 	return (
 		<>
 			<div className="phead">
 				<span className="title ell">{name}</span>
 				<span className="sp" />
+				{text || url ? (
+					<button
+						type="button"
+						className="iconbtn"
+						title="Download file"
+						aria-label="Download file"
+						onClick={() => save(text ?? '', name, url)}
+					>
+						<Download className="i sm" strokeWidth={1.6} />
+					</button>
+				) : null}
 				{url ? (
 					<a className="btn ghost sm" href={url} target="_blank" rel="noreferrer">
 						Open original
@@ -178,8 +203,8 @@ function HtmlView({ artifact, children }: { artifact: TaskArtifact; children?: R
 				{children}
 			</div>
 			<div className="html-artifact">
-				{loadingStored || download.isLoading ? <div className="boot-mark" /> : null}
-				{download.isError ? (
+				{loadingStored || signed.isLoading ? <div className="boot-mark" /> : null}
+				{signed.isError ? (
 					<div className="empty pad">Could not load this page. Reload the page to try again.</div>
 				) : null}
 				{rewritten || text || url ? (
@@ -224,6 +249,7 @@ function DocumentView({
 	const agent = useAskAgent(sessionId)
 	const targetSession = useSession(sessionId)
 	const copy = useCopy()
+	const download = useDownload()
 	const { showToast } = useUi()
 	const [draft, setDraft] = useStoredTarget<Draft>(documentDraftTargetKey(active.id))
 	// Set when you open the box; a box that came back with its draft leaves focus where it is.
@@ -346,6 +372,16 @@ function DocumentView({
 					}
 				>
 					<Copy className="i sm" strokeWidth={1.6} />
+				</button>
+				<button
+					type="button"
+					className="iconbtn"
+					disabled={!content}
+					title="Download file"
+					aria-label="Download file"
+					onClick={() => download(content, artifactName(active.file_name))}
+				>
+					<Download className="i sm" strokeWidth={1.6} />
 				</button>
 				{children}
 			</div>

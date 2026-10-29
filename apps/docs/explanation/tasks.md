@@ -87,6 +87,15 @@ HumanLayer links this path to task storage on the workstation:
 
 When a coding agent reads, writes, or edits a file in the current task directory with a supported file tool, HumanLayer syncs that file to the cloud. The cloud copy can then appear in the task's artifact view, where people can share and comment on it. This is task-file sync, not a backup of the repository or every file on the workstation.
 
+## Download a task file
+
+The artifact viewer has a download control next to copy. Use it when you want the file on this computer, including when the daemon that wrote it is on another host.
+
+- In the viewer header, choose **Download file** next to **Copy contents**.
+- In a task's file list, right-click the file and choose **Download file**.
+
+The saved name is the file's own name. Images and other stored files download the original bytes. Markdown and other text files download the contents you see in the viewer.
+
 ## Which files sync
 
 HumanLayer stores these file types as text artifacts:

@@ -3,6 +3,8 @@ import {
 	ArtifactViewerTabs,
 	ContentCopyButton,
 	ContentCopyMenuItem,
+	ContentDownloadButton,
+	ContentDownloadMenuItem,
 	getArtifactViewerViewOptions,
 	isArtifactSearchEnabled,
 	type ArtifactViewerViewOption,
@@ -144,6 +146,9 @@ interface CreateFullscreenArtifactActionsOptions {
 	onSearchToggle: () => void
 	isMac: boolean
 	copyAction: ContentCopyActionModel
+	downloadContent: string
+	downloadFileName: string
+	downloadImageUrl: string | null
 	viewerVersionAction: ArtifactViewerVersionActionModel | null
 	commentsAction: CommentsBulkActionsModel
 	artifactActionsMenuItems: ReactNode
@@ -159,6 +164,9 @@ function createFullscreenArtifactActions({
 	onSearchToggle,
 	isMac,
 	copyAction,
+	downloadContent,
+	downloadFileName,
+	downloadImageUrl,
 	viewerVersionAction,
 	commentsAction,
 	artifactActionsMenuItems,
@@ -238,6 +246,25 @@ function createFullscreenArtifactActions({
 		placement: 'trailing',
 		inline: <ContentCopyButton action={copyAction} className="h-8 w-8 [&_svg]:size-4" />,
 		overflow: <ContentCopyMenuItem action={copyAction} />,
+	})
+	actions.push({
+		key: 'download',
+		placement: 'trailing',
+		inline: (
+			<ContentDownloadButton
+				content={downloadContent}
+				fileName={downloadFileName}
+				imageUrl={downloadImageUrl}
+				className="h-8 w-8 [&_svg]:size-4"
+			/>
+		),
+		overflow: (
+			<ContentDownloadMenuItem
+				content={downloadContent}
+				fileName={downloadFileName}
+				imageUrl={downloadImageUrl}
+			/>
+		),
 	})
 	if (viewerVersionAction) {
 		actions.push({
@@ -516,6 +543,9 @@ export function ArtifactFullscreenPanel({
 		onSearchToggle: searchApi.toggleSearch,
 		isMac: IS_MAC,
 		copyAction,
+		downloadContent: artifactFields.content,
+		downloadFileName: artifactFields.fileName,
+		downloadImageUrl: imageUrl,
 		viewerVersionAction,
 		commentsAction,
 		artifactActionsMenuItems,

@@ -1,8 +1,10 @@
 import type { Session } from '@humanlayer/db/tables/sessions'
+import { useQuery } from '@tanstack/react-query'
 import type { RefObject } from 'react'
 
 import { createArtifactActions } from '@/actions/artifacts'
 import { useSync, useSyncInternal } from '@/components/providers/SyncProvider'
+import { artifactDownloadUrlQueryOptions } from '@/hooks/live-queries/artifact-download-url-query'
 import { useArtifactContent } from '@/hooks/live-queries/useArtifactContent'
 import type { TaskArtifact } from '@/hooks/live-queries/useTaskArtifacts'
 import { useSettingsStore } from '@/hooks/stores/settingsStore'
@@ -17,12 +19,13 @@ import { Menu, MenuItem, MenuSeparator } from '@/minimalist/components/Menu'
 import { PromptAccessDialog } from '@/minimalist/components/PromptAccessDialog'
 import { TextDialog } from '@/minimalist/components/TextDialog'
 import { useSessionAccess } from '@/minimalist/lib/access'
-import { artifactName, isImageArtifact } from '@/minimalist/lib/artifacts'
+import { artifactName, isHtmlArtifact, isImageArtifact } from '@/minimalist/lib/artifacts'
 import { useTask } from '@/minimalist/lib/data'
 import { sessionName } from '@/minimalist/lib/session-name'
 import { useUi } from '@/minimalist/lib/ui-state'
 import { useArchive } from '@/minimalist/lib/use-archive'
 import { useCopy } from '@/minimalist/lib/use-copy'
+import { useDownload } from '@/minimalist/lib/use-download'
 import { useRiptideApi } from '@/orpc/client'
 import { getAuthenticatedArtifactUrl } from '@/utils/artifact-links'
 
@@ -136,8 +139,20 @@ export function ArtifactRowMenu({
 	onClose: () => void
 }) {
 	const copy = useCopy()
+	const download = useDownload()
+	const { queryClient: api } = useRiptideApi()
 	const image = isImageArtifact(artifact)
+	const storedFile = image || isHtmlArtifact(artifact)
 	const content = useArtifactContent(image ? null : artifact.id).artifact?.content ?? ''
+	const signed = useQuery({
+		...artifactDownloadUrlQueryOptions(api, {
+			id: artifact.id,
+			last_updated_at: artifact.last_updated_at ?? 0n,
+		}),
+		enabled: storedFile,
+		staleTime: 4 * 60 * 60 * 1000,
+		retry: false,
+	})
 	const deletion = useArtifactDelete(artifact)
 	const link = getAuthenticatedArtifactUrl(artifact.task_id ?? '', artifact.id)
 	const run = (action: () => void) => () => {
@@ -155,6 +170,13 @@ export function ArtifactRowMenu({
 					)}
 				/>
 			)}
+			<MenuItem
+				label="Download file"
+				disabled={!(signed.data?.downloadUrl || content)}
+				onSelect={run(() =>
+					download(content, artifactName(artifact.file_name), signed.data?.downloadUrl ?? null),
+				)}
+			/>
 			<MenuItem
 				label="Copy link"
 				onSelect={run(() =>

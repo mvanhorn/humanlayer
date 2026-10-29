@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react'
 
-export type ArtifactActionKey = 'view-mode' | 'search' | 'copy' | 'viewer-version' | 'comments' | 'artifact-actions'
+export type ArtifactActionKey =
+	| 'view-mode'
+	| 'search'
+	| 'copy'
+	| 'download'
+	| 'viewer-version'
+	| 'comments'
+	| 'artifact-actions'
 
 export interface ArtifactActionDescriptor {
 	key: ArtifactActionKey
@@ -22,6 +29,7 @@ export const ARTIFACT_ACTION_OVERFLOW_ORDER: readonly ArtifactActionKey[] = [
 	'artifact-actions',
 	'viewer-version',
 	'copy',
+	'download',
 	'comments',
 	'search',
 ]
